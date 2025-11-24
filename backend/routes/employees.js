@@ -37,10 +37,24 @@ router.post('/', auth, [
   }
 });
 
-// GET /api/employees - Get all employees
+// GET /api/employees - Get all employees (with optional search)
 router.get('/', auth, async (req, res) => {
   try {
-    const employees = await Employee.find().sort({ createdAt: -1 });
+    const { search } = req.query;
+    let query = {};
+
+    // If search parameter is provided, search across firstName, lastName, and email
+    if (search && search.trim() !== '') {
+      query = {
+        $or: [
+          { firstName: { $regex: search, $options: 'i' } },
+          { lastName: { $regex: search, $options: 'i' } },
+          { email: { $regex: search, $options: 'i' } }
+        ]
+      };
+    }
+
+    const employees = await Employee.find(query).sort({ createdAt: -1 });
     res.json(employees);
   } catch (error) {
     console.error('Get employees error:', error);
